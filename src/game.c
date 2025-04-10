@@ -9,11 +9,24 @@
 #include "entities.h"
 #include "battle.h"
 #include "map.h"
+#include "enemyManager.h"
+#include "menu.h"
 
-int dungeon(Map *map, Enemy *goblin, Player *player)
+typedef enum{
+    MENU,
+    GAME
+}GameState;
+
+
+
+void InitEnemies();
+
+int dungeon(Map *map, Player *player)
 {
     drawBorder(map);
     
+    Enemy *goblin = GetEnemy(GOBLIN, COMMON);
+    Enemy *dragon = GetEnemy(DRAGON, COMMON);
 
     for(int height = 0 ; height <= map->height - 1; height++)
         {
@@ -37,11 +50,13 @@ int dungeon(Map *map, Enemy *goblin, Player *player)
         }
     
         battle(player, goblin, map);
+        battle(player, dragon, map);
         mvaddch(player->pos.y,player->pos.x, '@');
         draw_ui_window(0, 0, 10, 16);
         mvprintw(1,2,"Gold : %d", player->bank);
         draw_ui_window(0 ,map->width - 30, 6, 30);
-        mvprintw(1,map->width - 28,"Hp : %d", goblin->health);
+        mvprintw(1,map->width - 28,"Hp : %d", goblin->currentHealth);
+        mvprintw(2,map->width - 28,"Hp : %d", dragon->currentHealth);
 }
 
 void move_player(int c, Player *player, Map *map)
@@ -52,10 +67,16 @@ void move_player(int c, Player *player, Map *map)
         else if(c == KEY_RIGHT && map->tiles[player->pos.y][player->pos.x + 1] == ' ') player->pos.x++;
 }
 
-int gameLoop()   
+int game()   
 {   
+    clear();
     int max_height , max_width;
+    getmaxyx(stdscr, max_height, max_width);
+    srand(time(NULL));
+    InitEnemies();
+    
     int c;
+    
     Player player = 
     {
         .pos = {14, 14},
@@ -63,50 +84,70 @@ int gameLoop()
         .dmg = 1,
         .bank = 0,
         .skin = '@',
-        .isAlive = true
+        .isAlive = true,
+        .checkRespawn = false
         
     };
-    
-    Enemy goblin = 
-    {
-        .pos = {0,0},
-        .health = 3,
-        .skin = 'o',
-        .min_gold = 3,
-        .max_gold = 6,
-        .isAlive = false
-    };
 
-    Enemy dragon = 
-    {
-        .pos = {0,0},
-        .health = 20,
-        .skin = 'D',
-        .min_gold = 30,
-        .max_gold = 80,
-        .isAlive = false
-    };
-    initscr();
-    keypad(stdscr,1);//allow arrows
-    noecho();//don't display input
-    curs_set(0);//hide cursur
     
-    getmaxyx(stdscr, max_height, max_width);
+    
+    
     srand(time(NULL));
     Map map = createMap(max_height, max_width);
     
 do
 {
-    dungeon(&map, &goblin, &player);  
+    dungeon(&map, &player);  
     refresh();
     c = getch();
+    flushinp();
     move_player(c, &player, &map);
     
 }
  while (c != 27);// 27 - ESC
+    refresh();
+}
 
-    freeMap(&map);
+int gameLoop()
+{
+    initscr();
+    cbreak();
+    keypad(stdscr,1);//allow arrows
+    noecho();//don't display input
+    curs_set(0);//hide cursur
+    //timeout(0);
 
+    GameState state = MENU;
+    int input;
+
+    while(1)
+    {
+        switch (state)
+        {
+            case MENU :
+            InitMenuWindow();
+            input = getch();
+            flushinp();
+
+            if (input == '1')
+            {
+                state = GAME;
+            } else if(input == '3')
+            {
+                endwin();
+                exit(0);
+            }
+            break;
+            case GAME :
+            game();
+            input = getch();
+            flushinp();
+            if (input == 27)
+            {
+                state = MENU;
+            }
+            break;
+        }       
+    }
     endwin();
-    return 0;
 }
