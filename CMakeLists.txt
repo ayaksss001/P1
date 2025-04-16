@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.14)
 project(Game)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(libs)
-
 
 set(SOURCES
     src/main.c
@@ -14,25 +14,20 @@ set(SOURCES
     src/ui_map/menu.c
     src/entities/enemyManager.c
     src/entities/enemies.c
+    src/ui_map/shop.c
+    log/logger.cpp
+    log/logger_c_bridge.cpp
 )
-
 
 add_executable(game ${SOURCES})
 
-
-
 find_package(Curses REQUIRED)
 
+target_link_libraries(game PRIVATE ${CURSES_LIBRARIES} tinfo)
 
-
-target_link_libraries(game PRIVATE ${CURSES_LIBRARIES})
-
-target_include_directories(game PRIVATE src)
-target_include_directories(game PRIVATE src/entities)
-target_include_directories(game PRIVATE src/ui_map)
-
-
-
-
-
-
+target_include_directories(game PRIVATE 
+    src
+    src/entities       
+    src/ui_map
+    log
+)

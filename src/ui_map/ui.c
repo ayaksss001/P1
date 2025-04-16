@@ -18,3 +18,19 @@ void draw_ui_window(int y, int x, int height, int width)
     }
     refresh();  
 }
+
+void draw_ui_indicator(int y, int x, int width)
+{
+    for(int i = 0; i < width; i++)
+    {
+        mvaddch(y, i + x, '-');
+    };
+};
+
+void delete_ui_indicator(int y, int x, int width)
+{
+    for(int i = 0; i < width; i++)
+    {
+        mvaddch(y, i + x, ' ');
+    };
+};

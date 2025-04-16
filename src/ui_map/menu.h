@@ -1,6 +1,8 @@
 #ifndef MENU_H
 #define MENU_H
 
-void InitMenuWindow();
+#include "entities.h"
+
+void InitMenuWindow(Player *player);
 
 #endif

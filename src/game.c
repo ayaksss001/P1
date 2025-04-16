@@ -1,3 +1,11 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "logger.h"
+#ifdef __cplusplus
+}
+#endif
+
 #include <stdio.h>//printf(),getchar()
 #include<stdlib.h>
 #include <time.h>
@@ -11,17 +19,19 @@
 #include "map.h"
 #include "enemyManager.h"
 #include "menu.h"
+#include "shop.h"
 
 typedef enum{
     MENU,
-    GAME
+    GAME,
+    SHOP
 }GameState;
 
 
 
 void InitEnemies();
 
-int dungeon(Map *map, Player *player)
+int dungeon(Map *map, Player* player)
 {
     drawBorder(map);
     
@@ -52,8 +62,8 @@ int dungeon(Map *map, Player *player)
         battle(player, goblin, map);
         battle(player, dragon, map);
         mvaddch(player->pos.y,player->pos.x, '@');
-        draw_ui_window(0, 0, 10, 16);
-        mvprintw(1,2,"Gold : %d", player->bank);
+        draw_ui_window(0, 0, 5, 16);
+        mvprintw(2,3,"Gold : %d", player->bank);
         draw_ui_window(0 ,map->width - 30, 6, 30);
         mvprintw(1,map->width - 28,"Hp : %d", goblin->currentHealth);
         mvprintw(2,map->width - 28,"Hp : %d", dragon->currentHealth);
@@ -61,13 +71,14 @@ int dungeon(Map *map, Player *player)
 
 void move_player(int c, Player *player, Map *map)
 {
+        log_info("Player pressed up");
         if(c == KEY_UP && map->tiles[player->pos.y - 1][player->pos.x] == ' ') player->pos.y--;
         else if(c == KEY_DOWN && map->tiles[player->pos.y + 1][player->pos.x] == ' ') player->pos.y++;
         else if(c == KEY_LEFT && map->tiles[player->pos.y][player->pos.x - 1] == ' ') player->pos.x--;
         else if(c == KEY_RIGHT && map->tiles[player->pos.y][player->pos.x + 1] == ' ') player->pos.x++;
 }
 
-int game()   
+int game(Player* player)   
 {   
     clear();
     int max_height , max_width;
@@ -76,7 +87,29 @@ int game()
     InitEnemies();
     
     int c;
+    bool isTrue;
     
+    srand(time(NULL));
+    Map map = createMap(max_height, max_width);
+
+    while(isTrue)
+    {   
+        if(c != 27)
+        {
+            dungeon(&map, player);  
+            refresh();
+            c = getch();
+            flushinp();
+            move_player(c, player, &map);
+        }else 
+        {
+            isTrue = 0;
+            refresh();
+        }
+    }
+}
+int gameLoop()
+{
     Player player = 
     {
         .pos = {14, 14},
@@ -89,65 +122,25 @@ int game()
         
     };
 
-    
-    
-    
-    srand(time(NULL));
-    Map map = createMap(max_height, max_width);
-    
-do
-{
-    dungeon(&map, &player);  
-    refresh();
-    c = getch();
-    flushinp();
-    move_player(c, &player, &map);
-    
-}
- while (c != 27);// 27 - ESC
-    refresh();
-}
-
-int gameLoop()
-{
     initscr();
     cbreak();
     keypad(stdscr,1);//allow arrows
     noecho();//don't display input
     curs_set(0);//hide cursur
-    //timeout(0);
+    
 
     GameState state = MENU;
-    int input;
-
-    while(1)
+    char input;
+    bool mode = true;
+    while(mode)
     {
-        switch (state)
-        {
-            case MENU :
-            InitMenuWindow();
-            input = getch();
-            flushinp();
+        InitMenuWindow(&player);
+        input = getch();
+        if(input == '1') game(&player);
+        else if (input == '2') InitShop(&player);
+        else if(input == '3'|| input == 27) mode = false;
 
-            if (input == '1')
-            {
-                state = GAME;
-            } else if(input == '3')
-            {
-                endwin();
-                exit(0);
-            }
-            break;
-            case GAME :
-            game();
-            input = getch();
-            flushinp();
-            if (input == 27)
-            {
-                state = MENU;
-            }
-            break;
-        }       
     }
+    refresh();
     endwin();
 }
